@@ -1,7 +1,8 @@
 // The help layer: READMEs parsed into their levels, extracted from bundles'
-// files at the URIs they document, with their index; retrieved by runtime help.
+// files at the URIs they document, with their index; retrieved by help get.
 import test from 'brittle'
-import { parse, extract, help, check } from '../lib/help.js'
+import { parse, extract, check } from '../internal/extract/index.js'
+import { get as help } from '../external/get/index.js'
 
 const B = s => Buffer.from(s)
 const README = '# thing\n\nA thing, with `package.json` inside. More here.\n\n| | |\n|---|---|\n| [sub/](sub/) | below |\n\n## Usage\n\nUse it.\n\n## Notes\n\nNone.\n'
@@ -31,7 +32,7 @@ test('extract: each README at the URI it documents; the index; the packages link
   t.alike(index['/packages/haiccing/docs'].links, ['/'], 'its link to its mrepo/: the help root, where that folder went')
 })
 
-test('runtime help: the levels, a section, the nearest when nothing is there', async (t) => {
+test('help get: the levels, a section, the nearest when nothing is there', async (t) => {
   const files = extract(packages)
   const exec = { read: async uri => { const f = files[uri.slice('/help'.length)]; if (!f) throw new Error('none'); return f } }
   const s = await help(exec, { uri: '/packages/haiccing/app', body: {} })
@@ -54,4 +55,10 @@ test('the rules: a README against them, and a tree with a broken link, an unlink
   } }])
   const problems = JSON.parse(out['/problems.json'].toString()).map(p => `${p.uri} ${p.check}`).sort()
   t.alike(problems, ['/packages/o/p cascade', '/packages/o/p cascade', '/packages/o/p links', '/packages/o/p/b reached', '/packages/o/p/c/x reached'].sort(), 'the link to nothing; b and c/x not linked, not reached')
+})
+
+test('parse: a heading inside a code block is not a section', (t) => {
+  const r = parse('# x\n\nThe x.\n\n```markdown\n## not one\n```\n\n## One\n\nText.\n')
+  t.alike(r.sections.map(s => s.title), ['One'])
+  t.ok(r.summary.includes('## not one'), 'it stays in the summary')
 })

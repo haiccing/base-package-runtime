@@ -1,36 +1,6 @@
-// The help layer: every README of the packages an mrepo links, extracted at
-// the URI it documents, with a generated index, by the runtime as it starts
-// (before the mrepo is operational); retrieved by the runtime protocol's
-// help action (runtime help <uri>, lib/protocol.js).
-//
-// Where a README goes (help URIs, the layer's paths):
-//   a package's README at <path> in its bundle   /packages/<org>/<package><path>
-//   a package whose package.json names a `help` folder (package-docs-mrepo:
-//   "mrepo"): the READMEs in that folder        /<path inside it>
-//                                               (it documents the mrepo itself)
-// The problems, /problems.json: each README checked against the rules
-// (check; and on the whole tree: links, cascade, reached), [{ uri, check,
-// detail }]; none expected.
-// The index, /index.json: { "<uri>": { title, oneliner, links: ["<uri>"] } },
-// the uri a README's folder ("/" the root); links resolved to help URIs, only
-// those that have a README; /packages (the layer's help) linked to each
-// package's own.
-//
-// A README's shape: # title; the one-liner, the first sentence of the first
-// paragraph; the summary, everything up to the first ## heading; the
-// detail, the ## sections.
-//
-//   parse(text)                     -> { title, oneliner, summary, sections: [{ title, text }], links: [href] }
-//   check(text)                     -> [[check, detail]] (one README, the rules)
-//   extract(packages)               packages: [{ pkg, files: { '/<path>': bytes }, help, paths }]
-//                                   -> { '/<path>': bytes } (the READMEs, /index.json, /problems.json)
-//   extractInto({ repo, writer, dir })  the help layer from the mrepo's
-//                                   packages (its packages manifest, their
-//                                   bundles in <dir>/packages/): what is there
-//                                   replaced; committed when it changed
-//                                   -> { readmes, changed, problems }
-//   help(exec, { uri, body })       runtime help <uri>, body { level:
-//                                   'oneliner' | 'summary' | 'detail', section }
+// extract: an mrepo's help layer from its packages' READMEs, as the
+// runtime runs it before the mrepo is operational (README.md beside it).
+// Also parse (a README's levels) and check (the README rules).
 import { posix, join } from 'bare-path'
 import { readFileSync, existsSync } from 'bare-fs'
 import Bundle from 'bare-bundle'
@@ -51,14 +21,17 @@ export function parse (text) {
   const title = (lines.find(l => l.startsWith('# ')) ?? '# ').slice(2).trim()
   const at = lines.findIndex(l => l.startsWith('# '))
   const body = lines.slice(at + 1)
-  const first = body.findIndex(l => l.startsWith('## '))
+  // headings outside code blocks only
+  let code = false
+  const heading = body.map(l => { if (l.startsWith('```')) code = !code; return !code && l.startsWith('## ') })
+  const first = heading.indexOf(true)
   const summary = (first === -1 ? body : body.slice(0, first)).join('\n').trim()
   const sections = []
   if (first !== -1) {
     let cur = null
-    for (const l of body.slice(first)) {
-      if (l.startsWith('## ')) { cur = { title: l.slice(3).trim(), lines: [] }; sections.push(cur) } else cur.lines.push(l)
-    }
+    body.slice(first).forEach((l, i) => {
+      if (heading[first + i]) { cur = { title: l.slice(3).trim(), lines: [] }; sections.push(cur) } else cur.lines.push(l)
+    })
   }
   const para = summary.split(/\n\s*\n/).find(p => p.trim() && !p.trim().startsWith('|') && !p.trim().startsWith('```')) ?? ''
   const flat = para.replace(/\s+/g, ' ').trim()
@@ -159,7 +132,7 @@ export function extract (packages) {
   return out
 }
 
-const author = { name: 'mrepo-runtime', email: 'mrepo-runtime@localhost' }
+const author = { name: 'mrepo-help', email: 'mrepo-help@localhost' }
 const LAYER = { mode: 'atomic', description: 'Help: the READMEs of the packages the mrepo links, at the URIs they document, and their index (extracted by the runtime as it starts).' }
 
 export async function extractInto ({ repo, writer, dir }) {
@@ -194,29 +167,3 @@ export async function extractInto ({ repo, writer, dir }) {
   if (changed) await c.commit(`Help extracted: ${Object.keys(listed).join(', ')}`, { author })
   return { readmes, changed, problems: JSON.parse(files['/problems.json'].toString()).length }
 }
-
-// runtime help <uri>: the README documenting it, at its level; each link with its
-// one-liner (the next level, to choose from). The uri as the mrepo knows it
-// (/packages/haiccing/base-package-boot/test/boot), or under /help.
-export async function help (exec, { uri, body }) {
-  const u = uri.replace(/^\/help(?=\/|$)/, '') || '/'
-  const index = JSON.parse((await exec.read('/help/index.json').catch(() => { throw new Error('no help in this mrepo (its help layer)') })).toString())
-  const known = index[u]
-  if (!known) {
-    const near = Object.keys(index).filter(k => u.startsWith(k === '/' ? '/' : k + '/')).sort((a, b) => b.length - a.length)[0] ?? '/'
-    throw new Error(`no help at ${u}: nearest ${near}`)
-  }
-  const r = parse((await exec.read(u === '/' ? '/help/README.md' : `/help${u}/README.md`)).toString())
-  const level = body?.level ?? 'summary'
-  const links = known.links.map(l => ({ uri: l, oneliner: index[l].oneliner }))
-  const out = { uri: u, title: r.title, oneliner: r.oneliner, links }
-  if (body?.section) {
-    const s = r.sections.find(x => x.title.toLowerCase() === String(body.section).toLowerCase())
-    if (!s) throw new Error(`no section "${body.section}" at ${u} (${r.sections.map(x => x.title).join(', ')})`)
-    return { ...out, section: s }
-  }
-  if (level === 'oneliner') return out
-  if (level === 'detail') return { ...out, summary: r.summary, sections: r.sections }
-  return { ...out, summary: r.summary, sections: r.sections.map(s => s.title) }
-}
-

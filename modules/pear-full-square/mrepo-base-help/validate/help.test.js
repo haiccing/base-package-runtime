@@ -1,13 +1,13 @@
 // A package's help, extracted from its own files as a runtime would extract
-// it, checked against the rules (lib/help.js): no problems. Run inside the
+// it, checked against the rules (internal/extract): no problems. Run inside the
 // package (its dispatcher's /test/help): this file at
-// modules/pear-full-square/mrepo-base-runtime/validate/, the package four
+// modules/pear-full-square/mrepo-base-help/validate/, the package four
 // folders up.
 import test from 'brittle'
 import { readFileSync, readdirSync, statSync, existsSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { extract } from '../lib/help.js'
+import { extract } from '../internal/extract/index.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
 

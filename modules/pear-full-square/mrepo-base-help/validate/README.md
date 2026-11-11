@@ -1,6 +1,6 @@
 # validate/
 
-Tests every package carrying the runtime runs on itself, not the module's own tests.
+Tests every package carrying this module runs on itself, not the module's own tests.
 
 The package's dispatcher adds them as units of its own: `/test/help` and
 `/test/help-in-situ`.
@@ -14,4 +14,5 @@ no problems against the README rules. Run in a floating instance.
 
 The package's help, as a running mrepo's runtime extracted it, has no
 problems. Run through `runtime run`, which sets `MREPO`, the mrepo's
-directory, and `PACKAGE`; skipped without them.
+directory, `PACKAGE`, and `HELP`, a file with the mrepo's help index and
+problems as extracted; skipped without them.
