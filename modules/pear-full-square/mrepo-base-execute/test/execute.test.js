@@ -1,11 +1,11 @@
 import test from 'brittle'
-import { mkdtempSync, rmSync } from 'bare-fs'
+import { mkdtempSync, rmSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { tmpdir } from 'bare-os'
 import { openStore } from 'p2p-store'
 import { mrepos } from 'p2p-mrepo'
 import { openRepo, writer } from 'mycelium-git'
-import { layer, record, wrap, complete, guid, begin, EXECUTE } from 'mrepo-base-request'
+import { layer, record, wrap, complete, guid, begin, request, principals, EXECUTE } from 'mrepo-base-request'
 import { bootedHost } from 'mrepo-base-runtime/test/fixture.js'
 import { initialise, start, stop, shutdown, CONFIG } from 'mrepo-base-service'
 import { execute, executed, failed, ACTIONS } from '../index.js'
@@ -41,7 +41,7 @@ test('execute: execution branches from their targets, the record completed, merg
       t.alike(r, { ok: true, value: { service: 'initialised' } })
       t.is((await json(ctx.repo, '/runtime/service.json')).state, 'initialised', 'merged back into runtime')
       r = await run(ctx, { protocol: 'service', action: 'start', uri: '/' })
-      r = await run(ctx, { protocol: 'rest', action: 'put', uri: '/main/a/b.json', body: { n: 1 } })
+      r = await run(ctx, { protocol: 'rest', action: 'put', uri: '/main/a/b.json', args: ['{"n":1}'] })
       t.alike(r, { ok: true, value: { put: '/main/a/b.json' } }, 'completed: its form filled in, merged into request/execute')
       t.alike(await json(ctx.repo, '/main/a/b.json'), { n: 1 }, 'in main')
       t.alike((await ctx.backend.listBranches()).map(([b]) => b).filter(b => b.startsWith('execute/')), [], 'its execution branches, its own by its key: merged back and removed')
@@ -91,7 +91,7 @@ test('local commit and rollback in an action; the global commit at its end, a fa
       const at = async (repo, p) => (await repo.select(p)).length > 0
       const one = async (fail) => {
         const name = guid()
-        await begin(ctx, name, record(null, { protocol: 'rest', action: 'put', uri: '/main/x.json', body: 1 }, name))
+        await begin(ctx, name, record(null, { protocol: 'rest', action: 'put', uri: '/main/x.json', args: ['1'] }, name))
         await execute(ctx, { actions: go(fail) })
         return (await json(ctx.repo, `/${EXECUTE}/${name}.json`)).value.value
       }
@@ -120,7 +120,7 @@ test('local commit and rollback in an action; the global commit at its end, a fa
         return after
       } } }
       const name = guid()
-      await begin(ctx, name, record(null, { protocol: 'rest', action: 'put', uri: '/main/x.json', body: 1 }, name))
+      await begin(ctx, name, record(null, { protocol: 'rest', action: 'put', uri: '/main/x.json', args: ['1'] }, name))
       await execute(ctx, { actions: back })
       t.alike((await json(ctx.repo, `/${EXECUTE}/${name}.json`)).value.value.output, { committed: 1, dropped: 0, undone: 0 }, 'discard dropped the uncommitted; rollback undid the last commit, not the one before')
       t.ok(await at(ctx.repo, '/main/committed.json'), 'merged: what stayed committed')
@@ -138,7 +138,7 @@ test('local commit and rollback in an action; the global commit at its end, a fa
         return { after }
       } } }
       const n2 = guid()
-      await begin(ctx, n2, record(null, { protocol: 'rest', action: 'put', uri: '/main/x.json', body: 1 }, n2))
+      await begin(ctx, n2, record(null, { protocol: 'rest', action: 'put', uri: '/main/x.json', args: ['1'] }, n2))
       await execute(ctx, { actions: ditch })
       t.alike((await json(ctx.repo, `/${EXECUTE}/${n2}.json`)).value.value.output, { after: 0 }, 'reset: back to the start, its local commit undone')
       t.absent(await at(ctx.repo, '/main/first.json'), 'nothing before the reset merged')
@@ -201,6 +201,55 @@ test('failed: a runtime\'s error in the request executing', async (t) => {
       await begin(ctx, core.key, core)
       t.alike(await failed(ctx, 'runtime: x'), [core.key])
       t.is((await json(ctx.repo, `/${EXECUTE}/${core.key}.json`)).value.value.error, 'runtime: x', 'its form completed with the error: the request protocol moves it to done')
+    })
+  } finally { rmSync(work, { recursive: true, force: true }) }
+})
+
+test('exec.run: a command executed here; exec.forward: sent on, the principal waiting, returned with the response', async (t) => {
+  const work = mkdtempSync(join(tmpdir(), 'execute-'))
+  try {
+    await bootedHost(work, { preload: false })
+    await withHost(work, async ctx => {
+      await run(ctx, { protocol: 'service', action: 'initialise', uri: '/' })
+      await run(ctx, { protocol: 'service', action: 'start', uri: '/' })
+      await run(ctx, { protocol: 'rest', action: 'put', uri: '/main/x.json', args: ['{"n":1}'] })
+      // a linked mrepo's folder, as a shortcut would lead to it: its boxes
+      const other = join(work, 'other')
+      mkdirSync(join(other, 'inbox'), { recursive: true })
+      mkdirSync(join(other, 'outbox'), { recursive: true })
+      const to = { at: '/other', mrepo: 'local/other', folder: 'other', dir: other }
+      const acts = { ...ALL, rest: { ...ALL.rest,
+        // the command that follows: executed here
+        here: (exec, { args }) => exec.run(args),
+        // sent on, after a write that must not stay
+        there: (exec, { args }) => { exec.put('/main/dropped.json', Buffer.from('1')); return exec.forward(to, args) }
+      } }
+      const ctx2 = { ...ctx, dir: work, uri: 'local/host', protocols: { ...PROTOCOLS, rest: { gated: true, actions: { ...PROTOCOLS.rest.actions, here: any, there: any } } } }
+      const one = async (form) => {
+        const name = guid()
+        await begin(ctx2, name, record(null, form, name))
+        await execute(ctx2, { actions: acts })
+        return name
+      }
+      const done = async name => (await json(ctx2.repo, `/${EXECUTE}/${name}.json`)).value.value
+      const ran = await done(await one({ protocol: 'rest', action: 'here', uri: '/', args: ['rest/get', '/main/x.json'] }))
+      t.alike(ran.output, { n: 1 }, 'exec.run: the command interpreted and its action run in the same execution, its value returned')
+      t.is((await done(await one({ protocol: 'rest', action: 'here', uri: '/', args: ['rest/post', '/main/x.json'] }))).error, 'no action: rest post', 'checked as the request is (internal: no API gate), and its action looked up')
+
+      const name = await one({ protocol: 'rest', action: 'there', uri: '/other', args: ['service/start'] })
+      const [p] = (await principals(ctx2)).filter(x => x.id === name)
+      t.alike([p.core.value.remote.at, p.core.value.remote.folder, p.waits === p.core.value.remote.key], ['/other', 'other', true], 'exec.forward: the principal waiting on its branch, what it waits for recorded')
+      t.absent((await ctx2.repo.select('/main/dropped.json')).length, 'nothing of it executed here: its writes dropped')
+      const [file] = readdirSync(join(other, 'inbox'))
+      const sent = JSON.parse(readFileSync(join(other, 'inbox', file), 'utf8'))
+      t.alike([sent.topic, sent.value.topic, sent.value.value, sent.key], ['/local/other/inbox', `/local/host/execute/${name}`, ['service/start'], p.waits], 'in the linked mrepo\'s inbox folder: addressed to it by its unique URI, the command unchanged, its core addressed back to this request\'s branch')
+      // the linked mrepo's response, in its outbox folder: collected, added to
+      // the branch, the principal returned with it
+      writeFileSync(join(other, 'outbox', `${p.waits}.json`), JSON.stringify(wrap('/outbox', complete({ ...sent.value, value: { command: sent.value.value, protocol: 'service', action: 'start', uri: '/', args: [] } }, { ok: true, value: { service: 'started' } }))))
+      for (let i = 0; i < 4; i++) { await request(ctx2); await execute(ctx2, { actions: acts }) }
+      const back = (await json(ctx2.repo, `/request/done/${name}.json`)).value.value
+      t.alike(back.output, { service: 'started' }, 'returned with the response: a response is not checked as a request (service start is not allowed here now, the service being started)')
+      t.alike((await principals(ctx2)).length, 0, 'its branch removed')
     })
   } finally { rmSync(work, { recursive: true, force: true }) }
 })
