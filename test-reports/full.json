@@ -1,8 +1,8 @@
 {
   "package": "haiccing/base-package-runtime",
-  "content": "41741b58bf23cdc3c26674635144c786aaa1d7aa0849814760c3bf1500a43803",
+  "content": "f50ec4678359e9f8f88b326a10b654a85e43b9eb23871e07a235e64f9431c939",
   "bare": "v1.36.0",
-  "date": "2026-11-19T05:08:03.470Z",
+  "date": "2026-11-21T04:04:45.870Z",
   "set": "full",
   "ok": true,
   "units": [
@@ -75,12 +75,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-crud",
       "ok": true,
       "tests": {
-        "passed": 8,
-        "total": 8
+        "passed": 9,
+        "total": 9
       },
       "asserts": {
-        "passed": 76,
-        "total": 76
+        "passed": 80,
+        "total": 80
       },
       "failures": []
     },
@@ -101,12 +101,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-info",
       "ok": true,
       "tests": {
-        "passed": 8,
-        "total": 8
+        "passed": 9,
+        "total": 9
       },
       "asserts": {
-        "passed": 57,
-        "total": 57
+        "passed": 62,
+        "total": 62
       },
       "failures": []
     },
@@ -127,12 +127,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-request",
       "ok": true,
       "tests": {
-        "passed": 17,
-        "total": 17
+        "passed": 21,
+        "total": 21
       },
       "asserts": {
-        "passed": 188,
-        "total": 188
+        "passed": 240,
+        "total": 240
       },
       "failures": []
     },
@@ -144,8 +144,8 @@
         "total": 9
       },
       "asserts": {
-        "passed": 146,
-        "total": 146
+        "passed": 150,
+        "total": 150
       },
       "failures": []
     },
@@ -170,8 +170,8 @@
         "total": 5
       },
       "asserts": {
-        "passed": 52,
-        "total": 52
+        "passed": 55,
+        "total": 55
       },
       "failures": []
     },
@@ -211,6 +211,19 @@
       "asserts": {
         "passed": 195,
         "total": 195
+      },
+      "failures": []
+    },
+    {
+      "unit": "/test/modules/pear-full-square/mycelium-value-avro",
+      "ok": true,
+      "tests": {
+        "passed": 8,
+        "total": 8
+      },
+      "asserts": {
+        "passed": 57,
+        "total": 57
       },
       "failures": []
     },
@@ -287,8 +300,8 @@
         "total": 23
       },
       "asserts": {
-        "passed": 68,
-        "total": 68
+        "passed": 70,
+        "total": 70
       },
       "failures": []
     }
