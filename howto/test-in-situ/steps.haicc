@@ -1,0 +1,11 @@
+# scene: the host in service
+. boot/deploy host haiccing/base-component-haicc
+# step: what a set would run, nothing run
+host runtime/run . packages/haiccing/base-component-haicc/test/full dry-run
+# expect: "target":"/test/full","runs":["/test/configured"
+# step: the in-situ set: the mrepo checked as it is deployed
+host runtime/run . packages/haiccing/base-component-haicc/test/validate-in-situ
+# expect: "ok":true
+# step: one module's tests, in a floating instance
+host runtime/run . packages/haiccing/base-package-runtime/test/modules/pear-full-square/mrepo-base-runtime
+# expect: "ok":true

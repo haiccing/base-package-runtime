@@ -8,14 +8,7 @@ layers and its packages as they are.
 
 ## Steps
 
-```sh
-# what a set would run, nothing run
-haicc host runtime/run packages/haiccing/base-component-haicc/test/full dry-run
-# the in-situ set: the mrepo checked as it is deployed
-haicc host runtime/run packages/haiccing/base-component-haicc/test/validate-in-situ
-# one module's tests, in a floating instance
-haicc host runtime/run packages/haiccing/base-package-runtime/test/modules/pear-full-square/mrepo-base-runtime
-```
+The script, [steps.haicc](steps.haicc): each line as typed after `haicc`, what it answers under it; run with `howto/run`, shown here at info extraction.
 
 ## Notes
 
