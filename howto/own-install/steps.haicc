@@ -1,21 +1,16 @@
 # step: the package deployed on its own: an mrepo, its service started by its commission
 . boot/deploy rt haiccing/base-package-runtime
-# expect: "deployed":"rt"
-# expect: "mrepo":"local/rt"
+# expect: Deployed rt as local/rt, from haiccing/base-package-runtime.
+# expect: Its service is started.
 # step: in the install's mrepos, running
 . haicc/mrepos local/rt
-# expect: "package":"haiccing/base-package-runtime"
-# expect: "running":true
-# step: a command explained there, not run
-rt runtime/run . packages/haiccing/base-package-runtime/test/validate-in-situ --flags help
-# expect: Taken here, now.
+# expect: local/rt at rt, from haiccing/base-package-runtime, running.
 # step: its validation tests, run in it: its types, its info, its mrepo side
 rt runtime/run . packages/haiccing/base-package-runtime/test/validate-in-situ
-# expect: "target":"/test/validate-in-situ"
-# expect: "ok":true
+# expect: Passed: /test/validate-in-situ of haiccing/base-package-runtime, 3 units.
 # step: one test alone, its types
 rt runtime/run . packages/haiccing/base-package-runtime/test/types
-# expect: "ok":true
+# expect: Passed: /test/types of haiccing/base-package-runtime, 1 unit.
 # step: torn down
 . boot/teardown rt
-# expect: "tornDown":"rt"
+# expect: Torn down rt (local/rt)

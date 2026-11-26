@@ -1,16 +1,20 @@
 // The runtime as an mrepo's process: bare run.js --work=<folder>, over an
 // mrepo on the filesystem storage written here (its layers, no service);
 // started, its protocols registered, answering through its inbox, stopped.
+// The proof of the request structure in the runtime alone: a request in
+// (a record around it, by the package's types, asked of the schema
+// registry mounted as the warm boot mounts it), the same request out,
+// returned.
 import test from '../../modules/node_modules/brittle/index.js'
 import process from '../../modules/node_modules/bare-process/index.js'
 import { spawn, spawnSync } from '../../modules/node_modules/bare-subprocess/index.js'
-import fs, { mkdtempSync, rmSync, writeFileSync, mkdirSync, readdirSync, readFileSync } from '../../modules/node_modules/bare-fs/index.js'
+import fs, { mkdtempSync, rmSync, writeFileSync, mkdirSync, readdirSync, readFileSync, copyFileSync } from '../../modules/node_modules/bare-fs/index.js'
 import { join, dirname } from '../../modules/node_modules/bare-path/index.js'
 import os, { tmpdir } from '../../modules/node_modules/bare-os/index.js'
 import { fileURLToPath } from '../../modules/node_modules/bare-url/index.js'
 import { openRepo, writer, p2pgitBackend } from '../../modules/pear-full-square/mycelium-git/index.js'
-import { record, drop, nameOf, layer, gitdirOf, viewOf } from '../../modules/pear-full-square/mrepo-base-request/index.js'
-import { ask } from '../../modules/pear-full-square/mrepo-base-runtime/index.js'
+import { asked, drop, nameOf, layer, gitdirOf, viewOf, NONE } from '../../modules/pear-full-square/mrepo-base-request/index.js'
+import { ask, mountOf } from '../../modules/pear-full-square/mrepo-base-runtime/index.js'
 
 const pkg = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -39,18 +43,25 @@ async function mrepo (work) {
   await r.commit('Its boot hook file', { author })
   mkdirSync(join(viewOf(work, 'test'), 'inbox'), { recursive: true })
   writeFileSync(join(work, 'mrepo.json'), JSON.stringify({ storage: 'filesystem', name: 'test' }))
+  // the schema registry, where the install has it: the package's types
+  // mounted as the warm boot mounts them (the skeleton)
+  const mount = join(mountOf(work), 'haiccing', 'base-package-runtime')
+  mkdirSync(mount, { recursive: true })
+  for (const f of readdirSync(join(pkg, 'types')).filter(f => f.endsWith('.avsc'))) copyFileSync(join(pkg, 'types', f), join(mount, f))
   return backend
 }
 
-async function send (work, backend, form) {
-  const core = nameOf(drop(viewOf(work, 'test'), 'test', record('/test', { ...form })))
+// A request dropped in its inbox as anyone drops one, the line as typed;
+// its record back from the outbox, under the offset it arrived with.
+async function send (work, backend, line, more = {}) {
+  const offset = drop(viewOf(work, 'test'), 'test', { ...asked(line, { from: 'terminal', to: 'test', reply: '/terminal' }), ...more })
   const repo = openRepo(backend)
   for (let i = 0; i < 100; i++) {
-    const back = await layer({ repo: repo }, 'outbox').read(core).then(r => r, () => null)
-    if (back) return back.value.value
+    const back = await layer({ repo: repo }, 'outbox').read(nameOf(offset)).then(r => r, () => null)
+    if (back) return { offset, back }
     await wait(100)
   }
-  return null
+  return { offset, back: null }
 }
 
 test('the runtime: started, answering, stopped', { timeout: 60000 }, async (t) => {
@@ -72,15 +83,36 @@ test('the runtime: started, answering, stopped', { timeout: 60000 }, async (t) =
     let done = []
     for (let i = 0; i < 100 && done.length < 2; i++) {
       done = []
-      for (const n of await layer({ repo }, 'request/done').list()) done.push((await layer({ repo }, 'request/done').read(n)).value.value)
+      for (const n of await layer({ repo }, 'request/done').list()) done.push((await layer({ repo }, 'request/done').read(n)).value)
       if (done.length < 2) await wait(100)
     }
-    t.alike(done.map(f => (f.command ?? []).join(' ')).sort(), ['protocol/activate . help', 'protocol/activate . protocol'], 'the runtime\'s own, then the boot hook file\'s first line: each a request of its own, done')
-    t.ok(done.every(f => /^no protocol: protocol \(/.test(f.error ?? '')), 'neither possible here: no package linked, said; the hook file stopped at its first line')
+    t.alike(done.map(r => r.command).sort(), ['protocol/activate . help', 'protocol/activate . protocol'], 'the runtime\'s own, then the boot hook file\'s first line: each a request of its own, done')
+    t.ok(done.every(r => r.returned.status === 'failed' && /^Refused, nothing run\.\nno protocol: protocol \(/.test(r.returned.message)), 'neither possible here: no package linked, said; the hook file stopped at its first line')
+    t.alike(done.map(r => [r.from, r.to, r.reply]), [['test', 'test', null], ['test', 'test', null]], 'the mrepo\'s own: from and to itself, nobody waiting')
     t.alike(await repo.select('/protocols/*'), [], 'so nothing is active')
-    // through its inbox: nothing is active by default
-    t.is((await send(work, backend, { protocol: 'runtime', action: 'run', uri: '.', args: ['packages/haiccing/x/test/validate'] }))?.error, 'not now: runtime run (runtime is not active)', 'a request from outside for a protocol that is loaded and not active: refused as it executes')
-    t.is((await send(work, backend, { protocol: 'crud', action: 'read', uri: '.' }))?.error, 'no protocol: crud ()', 'a protocol it does not have: refused at once, said with the active ones (none)')
+    // The proof. Through its inbox: a request in, the same request out,
+    // returned failed: nothing is active by default, said in words.
+    const line = 'runtime/run . packages/haiccing/x/test/validate --flags log=debug'
+    const { offset, back } = await send(work, backend, line)
+    t.alike([back.topic, back.key, back.offset, back.headers], ['/outbox', null, offset, {}], 'back in its outbox: a record around it, under the offset it arrived with')
+    t.alike(back.value, {
+      command: line,
+      from: 'terminal',
+      to: 'test',
+      reply: '/terminal',
+      origin: null,
+      form: { protocol: 'runtime', action: 'run', uri: ['main', '.'], args: ['packages/haiccing/x/test/validate'], flags: { ...NONE, log: 'debug' } },
+      processing: { log: [], metrics: back.value.processing.metrics, changed: [], waiting: null, sent: null, continuation: null },
+      returned: { status: 'failed', message: 'Refused, nothing run.\nnot now: runtime run (runtime is not active)', attachments: [] }
+    }, 'the same request: its line as typed, who asked; its form as understood, its flags each its type; returned failed, why said: loaded, not active')
+    t.alike(back.value.processing.log, [], 'refused: nothing run, nothing in its log; why is what is returned, said once')
+    t.alike(Object.keys(back.value.processing.metrics), ['ms', 'reads', 'selects', 'puts', 'removes', 'commits'], 'and its metrics')
+    const kept = await layer({ repo }, 'request/done').read(nameOf(offset))
+    t.alike([kept.topic, kept.offset, kept.value], ['/request/done', offset, back.value], 'the same in request/done')
+    t.is((await send(work, backend, 'crud/read .')).back.value.returned.message, 'Refused, nothing run.\nno protocol: crud ()', 'a protocol it does not have: refused at the door, said with the active ones (none)')
+    t.is((await send(work, backend, 'runtime/run . x --flags nope')).back.value.returned.message, 'Not run: its flags.\nno flag: nope (container, feedback, help, layer, log, physical)', 'a flag there is none of: not run, said')
+    // by its types, asked of the registry, strict
+    t.is((await send(work, backend, 'runtime/run . x', { more: 1 })).back.value.returned.message, 'Refused, nothing run.\nnot a request (haiccing/base-package-runtime/request): ., expected haiccing.basePackageRuntime.request', 'a field its type does not have: not a request, refused at the inbox')
     t.ok((await ask({ work, op: 'stop' }))?.stopping, 'asked to stop')
     for (let i = 0; i < 100 && alive(child.pid); i++) await wait(100)
     t.absent(alive(child.pid), 'its process ended')

@@ -9,7 +9,7 @@ import { tmpdir } from '../../modules/node_modules/bare-os/index.js'
 import { join, dirname } from '../../modules/node_modules/bare-path/index.js'
 import { fileURLToPath } from '../../modules/node_modules/bare-url/index.js'
 import { typeOf, valid, readAs, is, uriOf, partsOf } from '../../modules/pear-full-square/mycelium-avro/index.js'
-import { asked, filled, understood, noted, measured, returned } from '../../modules/pear-full-square/mrepo-base-request/index.js'
+import { asked, filled, understood, noted, measured, returned, FLAGS, NONE } from '../../modules/pear-full-square/mrepo-base-request/index.js'
 import { registryOf, mountOf } from '../../modules/pear-full-square/mrepo-base-runtime/index.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -39,14 +39,14 @@ const request = typeOf(REQUEST, named)
 const carrying = (base, context, value) => typeOf({ ...base, name: `${context}.${partsOf(base.name).type}`, fields: [...base.fields, { name: 'value', type: value, doc: 'its value' }] }, { ...named })
 
 // A request as it arrives, as plain JSON: the line as typed and who asked.
-const ARRIVED = { command: 'crud/read swarms', from: 'terminal', to: 'local/host', reply: '/haicc/terminal', origin: null, form: null, processing: { log: [], metrics: null, changed: [], waiting: null, path: [], continuation: null }, returned: null }
-const FORM = { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: { log: 'info' } }
+const ARRIVED = { command: 'crud/read swarms', from: 'terminal', to: 'local/host', reply: '/haicc/terminal', origin: null, form: null, processing: { log: [], metrics: null, changed: [], waiting: null, sent: null, continuation: null }, returned: null }
+const FORM = { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: { ...NONE, log: 'info' } }
 const PROCESSED = {
   log: [{ time: '2026-11-26T10:00:00.120Z', level: 'info', event: 'request.metrics', line: 'Done in 12 ms: 2 reads, 1 select.' }],
   metrics: { ms: 12, reads: 2, selects: 1, puts: 0, removes: 0, commits: 0 },
   changed: [],
   waiting: null,
-  path: [],
+  sent: null,
   continuation: null
 }
 const DONE = { ...ARRIVED, form: FORM, processing: PROCESSED, returned: { status: 'done', message: 'Deployed host as local/host, from haiccing/base-component-haicc.\nIts service is started.', attachments: [] } }
@@ -109,6 +109,14 @@ test('an attachment: data that is the product, named by its type; its value its 
   const answered = { ...DONE, returned: { status: 'done', message: 'Two nodes at swarms.', attachments: [{ name: rows.name, type: rows.type, at: 'local/host/attachments/1795482773435/0' }] } }
   t.alike(valid(request, answered), { valid: true }, 'a request with an attachment, its value stored apart')
   t.alike(plain(readAs(request, request, answered)), answered, 'through AVRO and back, the same')
+})
+
+test('the flags: a field of the type each flag there is, by its declaration; one that stands alone a boolean, one that takes a value a text', (t) => {
+  const fields = REQUEST.fields.find(f => f.name === 'form').type[1].fields.find(f => f.name === 'flags').type.fields
+  t.alike(fields.map(f => f.name).sort(), Object.keys(FLAGS).sort(), 'every flag declared a field, every field a flag declared')
+  for (const f of fields) t.alike([f.type, f.default], FLAGS[f.name].values === null ? ['boolean', false] : [['null', 'string'], null], `${f.name}: its type and what it is when not written`)
+  t.alike(valid(request, { ...ARRIVED, form: { ...FORM, flags: { ...NONE, nope: true } } }), { valid: false, problems: [{ at: 'form/flags', expected: 'haiccing.basePackageRuntime.requestFlags' }] }, 'a flag there is none of: not a request')
+  t.alike(valid(request, { ...ARRIVED, form: { ...FORM, flags: { ...NONE, help: 'yes' } } }).valid, false, 'a value of another type: not a request')
 })
 
 test('what the request module makes is the request: each step of its way valid as the type, the same after AVRO and back', (t) => {

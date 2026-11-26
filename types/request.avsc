@@ -75,7 +75,7 @@
                 "type": "array",
                 "items": "string"
               },
-              "doc": "where, its segments: a prefix, then the URI as written"
+              "doc": "where, inside this mrepo only (what led here is forgotten): the layer first, then the local root positions gone through, then the relative URI asked there, the last. Kept apart so no boundary is parsed again. One pattern, whoever asks"
             },
             {
               "name": "args",
@@ -88,12 +88,60 @@
             },
             {
               "name": "flags",
-              "type": {
-                "type": "map",
-                "values": "string"
-              },
+              "doc": "the flags in force, a field each flag there is",
               "default": {},
-              "doc": "the flags in force, a text each"
+              "type": {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestFlags",
+                "doc": "A request's flags: what is asked of the way it is handled; one that stands alone a boolean, false when not written; one that takes a value a text, none when not written",
+                "fields": [
+                  {
+                    "name": "log",
+                    "type": [
+                      "null",
+                      "string"
+                    ],
+                    "default": null,
+                    "doc": "how much its log holds: info, verbose or debug; none: info"
+                  },
+                  {
+                    "name": "layer",
+                    "type": [
+                      "null",
+                      "string"
+                    ],
+                    "default": null,
+                    "doc": "the layer its command's own URI is read at; none: main"
+                  },
+                  {
+                    "name": "container",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "a child deployed into a container"
+                  },
+                  {
+                    "name": "help",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "the command answered with help, not executed"
+                  },
+                  {
+                    "name": "feedback",
+                    "type": [
+                      "null",
+                      "string"
+                    ],
+                    "default": null,
+                    "doc": "feedback on the command, recorded, the command not executed: its text"
+                  },
+                  {
+                    "name": "physical",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "its URI read as its layer is stored"
+                  }
+                ]
+              }
             }
           ]
         }
@@ -287,13 +335,34 @@
             ]
           },
           {
-            "name": "path",
-            "type": {
-              "type": "array",
-              "items": "string"
-            },
-            "default": [],
-            "doc": "the positions it went through, when it was sent on"
+            "name": "sent",
+            "default": null,
+            "doc": "the request it became where it was sent on; none: it was not",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestSent",
+                "doc": "A link to the request a request became in another mrepo: what happened to it there is that request's own, in that mrepo's request/done",
+                "fields": [
+                  {
+                    "name": "at",
+                    "type": "string",
+                    "doc": "the position it was sent on at"
+                  },
+                  {
+                    "name": "mrepo",
+                    "type": "string",
+                    "doc": "the mrepo it was sent on to, by its unique URI"
+                  },
+                  {
+                    "name": "offset",
+                    "type": "long",
+                    "doc": "its offset there: its identity in that mrepo"
+                  }
+                ]
+              }
+            ]
           },
           {
             "name": "continuation",
