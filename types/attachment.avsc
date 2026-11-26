@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "haiccing.basePackageRuntime.attachment",
+  "doc": "Data that is an answer's product, named by its type. With its value it is a variant of this, its value its type's; stored apart, pointed to",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "what it is, said"
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "doc": "its type, by its URI: what its value is read as"
+    },
+    {
+      "name": "at",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "where its value is, a URI, when it is not carried here"
+    }
+  ]
+}

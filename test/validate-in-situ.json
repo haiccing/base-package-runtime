@@ -1,6 +1,7 @@
 {
-  "description": "The package where it is deployed: run in a running mrepo (runtime run), it checks what that mrepo made of it.",
+  "description": "The package where it is deployed: run in a running mrepo (runtime run), its types checked there and what that mrepo made of it; safe at any time, nothing written.",
   "tests": [
+    "types",
     "info-in-situ",
     "mrepo-in-situ"
   ]

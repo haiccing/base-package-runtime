@@ -2,6 +2,7 @@
   "description": "The package on its own, in a floating instance: it works, and its info, its code and its mrepo side check without problems.",
   "tests": [
     "start",
+    "types",
     "info",
     "code",
     "mrepo",

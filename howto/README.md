@@ -5,3 +5,4 @@ What can be done with the runtime protocol: a how-to each, its steps as typed co
 ## Links
 
 - [test-in-situ](test-in-situ/)
+- [own-install](own-install/)

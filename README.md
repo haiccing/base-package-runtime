@@ -16,6 +16,7 @@ bare <dir>/packages/haiccing/base-package-runtime.bundle <dir>
 - [stop](modules/pear-full-square/mrepo-base-runtime/external/stop/)
 - [lay](modules/pear-full-square/mrepo-base-runtime/external/lay/)
 - [howto](howto/)
+- [types](types/)
 - [mrepo](mrepo/)
 - [modules](modules/)
 - [test](test/)

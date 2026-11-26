@@ -1,0 +1,51 @@
+{
+  "type": "record",
+  "name": "haiccing.basePackageRuntime.record",
+  "doc": "A record, the transport envelope, as Kafka's: where it is and when; nothing of what its value means. A stream's record with its value is a variant of it, its value the stream's type",
+  "fields": [
+    {
+      "name": "topic",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "the stream it is in or goes to"
+    },
+    {
+      "name": "key",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "a key of the exchange's own, where a record is found by one"
+    },
+    {
+      "name": "offset",
+      "type": [
+        "null",
+        "long"
+      ],
+      "default": null,
+      "doc": "its identity where it is: the milliseconds since the epoch when it arrived there, never two the same"
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "when it was made"
+    },
+    {
+      "name": "headers",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "default": {},
+      "doc": "the transport's own notes, a text each"
+    }
+  ]
+}

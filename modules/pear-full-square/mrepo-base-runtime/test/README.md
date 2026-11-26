@@ -31,3 +31,7 @@ Shared by the tests, not a test itself. The runtime from the command line, start
 - version: the module and its version
 - a bad call: exit 2
 - the runtime: started detached, the store held, asked over its connection, stopped
+
+## `registry.test.js`
+
+- the registry: a type asked by its name, where the registry is; the types it names read with it; a value checked, strictly
