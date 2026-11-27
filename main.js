@@ -16,6 +16,7 @@ const ENTRIES = {
 // carried module's unit tests.
 const UNITS = {
   "/test/code": () => Promise.all([import("./test/code/run.js")]),
+  "/test/deployed": () => Promise.all([import("./test/deployed/run.js")]),
   "/test/info": () => Promise.all([import("./test/info/run.js")]),
   "/test/info-in-situ": () => Promise.all([import("./test/info-in-situ/run.js")]),
   "/test/mrepo": () => Promise.all([import("./test/mrepo/run.js")]),
@@ -26,12 +27,13 @@ const UNITS = {
   "/test/modules/pear-full-square/mrepo-base-execute": () => Promise.all([import("./modules/pear-full-square/mrepo-base-execute/test/execute.test.js")]),
   "/test/modules/pear-full-square/mrepo-base-info": () => Promise.all([import("./modules/pear-full-square/mrepo-base-info/test/info.test.js")]),
   "/test/modules/pear-full-square/mrepo-base-request": () => Promise.all([import("./modules/pear-full-square/mrepo-base-request/test/boxes.test.js"), import("./modules/pear-full-square/mrepo-base-request/test/check.test.js"), import("./modules/pear-full-square/mrepo-base-request/test/pass.test.js"), import("./modules/pear-full-square/mrepo-base-request/test/request.test.js")]),
-  "/test/modules/pear-full-square/mrepo-base-runtime": () => Promise.all([import("./modules/pear-full-square/mrepo-base-runtime/test/program.test.js"), import("./modules/pear-full-square/mrepo-base-runtime/test/registry.test.js"), import("./modules/pear-full-square/mrepo-base-runtime/test/runtime.test.js")]),
+  "/test/modules/pear-full-square/mrepo-base-runtime": () => Promise.all([import("./modules/pear-full-square/mrepo-base-runtime/test/program.test.js"), import("./modules/pear-full-square/mrepo-base-runtime/test/runtime.test.js"), import("./modules/pear-full-square/mrepo-base-runtime/test/types.test.js")]),
   "/test/modules/pear-full-square/mrepo-base-xpath": () => Promise.all([import("./modules/pear-full-square/mrepo-base-xpath/test/xpath.test.js")]),
   "/test/modules/pear-full-square/mycelium-avro": () => Promise.all([import("./modules/pear-full-square/mycelium-avro/test/avro.test.js")]),
   "/test/modules/pear-full-square/mycelium-container-document": () => Promise.all([import("./modules/pear-full-square/mycelium-container-document/test/documents.test.js"), import("./modules/pear-full-square/mycelium-container-document/test/stream.test.js")]),
   "/test/modules/pear-full-square/mycelium-git": () => Promise.all([import("./modules/pear-full-square/mycelium-git/test/bundle.test.js"), import("./modules/pear-full-square/mycelium-git/test/engines.test.js"), import("./modules/pear-full-square/mycelium-git/test/hyperdrive.test.js"), import("./modules/pear-full-square/mycelium-git/test/isogit.test.js"), import("./modules/pear-full-square/mycelium-git/test/mixed.test.js"), import("./modules/pear-full-square/mycelium-git/test/native.test.js"), import("./modules/pear-full-square/mycelium-git/test/p2pgit.test.js"), import("./modules/pear-full-square/mycelium-git/test/split.test.js")]),
   "/test/modules/pear-full-square/mycelium-uri": () => Promise.all([import("./modules/pear-full-square/mycelium-uri/test/names.test.js"), import("./modules/pear-full-square/mycelium-uri/test/relative.test.js"), import("./modules/pear-full-square/mycelium-uri/test/uri.test.js")]),
+  "/test/modules/pear-full-square/mycelium-value": () => Promise.all([import("./modules/pear-full-square/mycelium-value/test/value.test.js")]),
   "/test/modules/pear-full-square/mycelium-value-avro": () => Promise.all([import("./modules/pear-full-square/mycelium-value-avro/test/avro.test.js")]),
   "/test/modules/pear-full-square/mycelium-value-json": () => Promise.all([import("./modules/pear-full-square/mycelium-value-json/test/json.test.js")]),
   "/test/modules/pear-full-square/mycelium-xpath": () => Promise.all([import("./modules/pear-full-square/mycelium-xpath/test/query.test.js"), import("./modules/pear-full-square/mycelium-xpath/test/xpath.test.js")]),
@@ -42,7 +44,7 @@ const UNITS = {
   "/test/modules/pear-full-square/pkgm-base-check": () => Promise.all([import("./modules/pear-full-square/pkgm-base-check/test/mrepo.test.js"), import("./modules/pear-full-square/pkgm-base-check/test/package.test.js"), import("./modules/pear-full-square/pkgm-base-check/test/patterns.test.js"), import("./modules/pear-full-square/pkgm-base-check/test/rules.test.js"), import("./modules/pear-full-square/pkgm-base-check/test/tests.test.js")]),
 }
 // The test sets: their tests by name (modules: every module's unit tests).
-const SETS = {"/test/full":["start","types","info","code","mrepo","package","modules"],"/test/validate-in-situ":["types","info-in-situ","mrepo-in-situ"],"/test/validate":["start","types","info","code","mrepo","package"]}
+const SETS = {"/test/full":["start","types","deployed","info","code","mrepo","package","modules"],"/test/validate-in-situ":["types","info-in-situ","mrepo-in-situ"],"/test/validate":["start","types","deployed","info","code","mrepo","package"]}
 
 // What a target runs: its units (a set, /test/modules, a unit); null: none.
 export function expand (target) {

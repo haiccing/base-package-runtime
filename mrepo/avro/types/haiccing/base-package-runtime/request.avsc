@@ -1,0 +1,430 @@
+{
+  "type": "record",
+  "name": "haiccing.basePackageRuntime.request",
+  "doc": "A request, self-contained: what was asked and by whom, as understood, what happened to it on its way, what is returned",
+  "fields": [
+    {
+      "name": "command",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "the command line as typed; none when the form came filled in"
+    },
+    {
+      "name": "from",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "who asked: an mrepo's unique URI, or what stands outside (a terminal)"
+    },
+    {
+      "name": "to",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "the mrepo it is for, by its unique URI"
+    },
+    {
+      "name": "reply",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "doc": "where it is sent, completed; none: nobody waits for it"
+    },
+    {
+      "name": "origin",
+      "type": [
+        "null",
+        "long"
+      ],
+      "default": null,
+      "doc": "its offset where it came from: its sender finds its answer by it"
+    },
+    {
+      "name": "form",
+      "default": null,
+      "doc": "the command as understood; none until it is interpreted",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "haiccing.basePackageRuntime.requestForm",
+          "doc": "A command as understood: its protocol and action, where, with what",
+          "fields": [
+            {
+              "name": "protocol",
+              "type": "string",
+              "doc": "the protocol"
+            },
+            {
+              "name": "action",
+              "type": "string",
+              "doc": "its action; the protocol's default where none was written"
+            },
+            {
+              "name": "uri",
+              "type": {
+                "type": "array",
+                "items": "string"
+              },
+              "doc": "where, inside this mrepo only (what led here is forgotten): the layer first, then the local root positions gone through, then the relative URI asked there, the last. Kept apart so no boundary is parsed again. One pattern, whoever asks"
+            },
+            {
+              "name": "args",
+              "type": {
+                "type": "array",
+                "items": "string"
+              },
+              "default": [],
+              "doc": "its arguments, the command's words"
+            },
+            {
+              "name": "flags",
+              "doc": "the flags in force, a field each flag there is",
+              "default": {},
+              "type": {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestFlags",
+                "doc": "A request's flags: what is asked of the way it is handled; one that stands alone a boolean, false when not written; one that takes a value a text, none when not written",
+                "fields": [
+                  {
+                    "name": "log",
+                    "type": [
+                      "null",
+                      "string"
+                    ],
+                    "default": null,
+                    "doc": "how much its log holds: info, verbose or debug; none: info"
+                  },
+                  {
+                    "name": "layer",
+                    "type": [
+                      "null",
+                      "string"
+                    ],
+                    "default": null,
+                    "doc": "the layer its command's own URI is read at; none: main"
+                  },
+                  {
+                    "name": "container",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "a child deployed into a container"
+                  },
+                  {
+                    "name": "help",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "the command answered with help, not executed"
+                  },
+                  {
+                    "name": "feedback",
+                    "type": [
+                      "null",
+                      "string"
+                    ],
+                    "default": null,
+                    "doc": "feedback on the command, recorded, the command not executed: its text"
+                  },
+                  {
+                    "name": "physical",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "its URI read as its layer is stored"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "processing",
+      "doc": "what happened to it on its way",
+      "default": {
+        "log": [],
+        "metrics": null,
+        "changed": [],
+        "waiting": null,
+        "path": [],
+        "continuation": null
+      },
+      "type": {
+        "type": "record",
+        "name": "haiccing.basePackageRuntime.requestProcessing",
+        "doc": "A request's processing: its log, its metrics, what it changed, what it waits for, where it went, what follows",
+        "fields": [
+          {
+            "name": "log",
+            "default": [],
+            "doc": "its entries, in order",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.logEntry",
+                "doc": "An entry of a log: when, how grave, what kind, and a line saying it",
+                "fields": [
+                  {
+                    "name": "time",
+                    "type": {
+                      "type": "long",
+                      "logicalType": "timestamp-millis"
+                    },
+                    "doc": "when"
+                  },
+                  {
+                    "name": "level",
+                    "type": "string",
+                    "doc": "error, warn, info, verbose or debug"
+                  },
+                  {
+                    "name": "event",
+                    "type": "string",
+                    "doc": "its kind, a stable name"
+                  },
+                  {
+                    "name": "line",
+                    "type": "string",
+                    "doc": "what happened, said"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "metrics",
+            "default": null,
+            "doc": "its measures, when it has completed",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestMetrics",
+                "doc": "A request's measures",
+                "fields": [
+                  {
+                    "name": "ms",
+                    "type": "long",
+                    "doc": "how long it took, in milliseconds"
+                  },
+                  {
+                    "name": "reads",
+                    "type": "long",
+                    "default": 0,
+                    "doc": "documents read"
+                  },
+                  {
+                    "name": "selects",
+                    "type": "long",
+                    "default": 0,
+                    "doc": "selections made"
+                  },
+                  {
+                    "name": "puts",
+                    "type": "long",
+                    "default": 0,
+                    "doc": "documents written"
+                  },
+                  {
+                    "name": "removes",
+                    "type": "long",
+                    "default": 0,
+                    "doc": "documents removed"
+                  },
+                  {
+                    "name": "commits",
+                    "type": "long",
+                    "default": 0,
+                    "doc": "commits made"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "changed",
+            "default": [],
+            "doc": "what it changed, a layer each",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestChange",
+                "doc": "What a request changed in one layer",
+                "fields": [
+                  {
+                    "name": "target",
+                    "type": "string",
+                    "doc": "the layer"
+                  },
+                  {
+                    "name": "added",
+                    "type": {
+                      "type": "array",
+                      "items": "string"
+                    },
+                    "default": [],
+                    "doc": "the paths added"
+                  },
+                  {
+                    "name": "changed",
+                    "type": {
+                      "type": "array",
+                      "items": "string"
+                    },
+                    "default": [],
+                    "doc": "the paths changed"
+                  },
+                  {
+                    "name": "removed",
+                    "type": {
+                      "type": "array",
+                      "items": "string"
+                    },
+                    "default": [],
+                    "doc": "the paths removed"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "waiting",
+            "default": null,
+            "doc": "whose answer it waits for; none: it waits for none",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestWaiting",
+                "doc": "What a request waits for: a request it became, elsewhere",
+                "fields": [
+                  {
+                    "name": "at",
+                    "type": "string",
+                    "doc": "the position it was sent on at"
+                  },
+                  {
+                    "name": "folder",
+                    "type": "string",
+                    "doc": "where the answer arrives"
+                  },
+                  {
+                    "name": "offset",
+                    "type": "long",
+                    "doc": "the offset of the request it became"
+                  },
+                  {
+                    "name": "resume",
+                    "type": "boolean",
+                    "default": false,
+                    "doc": "whether its action is run again with the answer"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "sent",
+            "default": null,
+            "doc": "the request it became where it was sent on; none: it was not",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestSent",
+                "doc": "A link to the request a request became in another mrepo: what happened to it there is that request's own, in that mrepo's request/done",
+                "fields": [
+                  {
+                    "name": "at",
+                    "type": "string",
+                    "doc": "the position it was sent on at"
+                  },
+                  {
+                    "name": "mrepo",
+                    "type": "string",
+                    "doc": "the mrepo it was sent on to, by its unique URI"
+                  },
+                  {
+                    "name": "offset",
+                    "type": "long",
+                    "doc": "its offset there: its identity in that mrepo"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "continuation",
+            "default": null,
+            "doc": "what whoever asked goes on with; none: nothing",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "haiccing.basePackageRuntime.requestContinuation",
+                "doc": "A script to go on with, and where",
+                "fields": [
+                  {
+                    "name": "at",
+                    "type": "string",
+                    "doc": "the position its lines are for"
+                  },
+                  {
+                    "name": "script",
+                    "type": "string",
+                    "doc": "its lines"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "returned",
+      "default": null,
+      "doc": "what is returned; none until it has completed",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "haiccing.basePackageRuntime.requestReturned",
+          "doc": "What a request returns: how it ended, what is said of it, and its data where data is the product",
+          "fields": [
+            {
+              "name": "status",
+              "type": "string",
+              "doc": "done or failed"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "doc": "what happened, why it failed, what to do next: natural language, the outcome first, a fact a line, names exact"
+            },
+            {
+              "name": "attachments",
+              "type": {
+                "type": "array",
+                "items": "haiccing.basePackageRuntime.attachment"
+              },
+              "default": [],
+              "doc": "its data, where data is the product"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

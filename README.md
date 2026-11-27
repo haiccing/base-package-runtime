@@ -34,8 +34,8 @@ bare <dir>/packages/haiccing/base-package-runtime.bundle <dir>
 The mrepo at `<dir>` (on the filesystem storage), started from its own
 `packages/` (its pinned runtime): by the boot for the boot mrepo, by a
 parent's `boot deploy` for a child. It loads the protocols its linked
-packages offer and fires its `boot` hooks, then its `commission` (once,
-after its deploy); it names no protocol itself. Stopped over its local connection (`<dir>/runtime.sock`;
+packages offer and fires its `boot` hooks, then its `commission` (at every
+start, its lines idempotent); it names no protocol itself. Stopped over its local connection (`<dir>/runtime.sock`;
 a short path in the temporary folder when that is too long), by SIGTERM or
 SIGINT; it runs until then. (`--work=<folder>`: the
 mrepo a work folder's setting names, as the p2p host.)

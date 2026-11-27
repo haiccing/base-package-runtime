@@ -2,19 +2,19 @@
 // mrepo on the filesystem storage written here (its layers, no service);
 // started, its protocols registered, answering through its inbox, stopped.
 // The proof of the request structure in the runtime alone: a request in
-// (a record around it, by the package's types, asked of the schema
-// registry mounted as the warm boot mounts it), the same request out,
-// returned.
+// (a record around it, checked by the package's types in the mrepo's own
+// avro layer), the same request out, returned. And what stops a runtime: a
+// boot hook that fails, its essential types not held.
 import test from '../../modules/node_modules/brittle/index.js'
 import process from '../../modules/node_modules/bare-process/index.js'
 import { spawn, spawnSync } from '../../modules/node_modules/bare-subprocess/index.js'
-import fs, { mkdtempSync, rmSync, writeFileSync, mkdirSync, readdirSync, readFileSync, copyFileSync } from '../../modules/node_modules/bare-fs/index.js'
+import fs, { mkdtempSync, rmSync, writeFileSync, mkdirSync, readdirSync, readFileSync } from '../../modules/node_modules/bare-fs/index.js'
 import { join, dirname } from '../../modules/node_modules/bare-path/index.js'
 import os, { tmpdir } from '../../modules/node_modules/bare-os/index.js'
 import { fileURLToPath } from '../../modules/node_modules/bare-url/index.js'
 import { openRepo, writer, p2pgitBackend } from '../../modules/pear-full-square/mycelium-git/index.js'
 import { asked, drop, nameOf, layer, gitdirOf, viewOf, NONE } from '../../modules/pear-full-square/mrepo-base-request/index.js'
-import { ask, mountOf } from '../../modules/pear-full-square/mrepo-base-runtime/index.js'
+import { ask, booted, whyFailed } from '../../modules/pear-full-square/mrepo-base-runtime/index.js'
 
 const pkg = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -22,9 +22,11 @@ const alive = pid => spawnSync('kill', ['-0', String(pid)], { stdio: 'ignore' })
 const author = { name: 'test', email: 'test@localhost' }
 
 // An mrepo from the runtime package's part of the structure alone: its
-// layers, its boot hook file (the package's own, mrepo/runtime/hooks/boot.haicc),
-// no package linked, nothing preloaded.
-async function mrepo (work) {
+// layers, no package linked, nothing preloaded. No boot hook: the package's
+// own (mrepo/runtime/hooks/boot.haicc) activates protocols of packages that
+// are not linked here. hook: a boot hook file's text, for the test of one;
+// avro: false, without its avro layer.
+async function mrepo (work, { hook = null, avro = true } = {}) {
   const gitdir = gitdirOf(work, 'test')
   mkdirSync(gitdir, { recursive: true })
   const backend = p2pgitBackend(gitdir, { fs })
@@ -38,16 +40,22 @@ async function mrepo (work) {
     await c.put('/.layer.json', readFileSync(join(pkg, 'mrepo', l, '.layer.json')))
     await c.commit('Its config', { author })
   }
-  const r = await w.change('runtime')
-  await r.put('/hooks/boot.haicc', readFileSync(join(pkg, 'mrepo', 'runtime', 'hooks', 'boot.haicc')))
-  await r.commit('Its boot hook file', { author })
+  if (hook !== null) {
+    const r = await w.change('runtime')
+    await r.put('/hooks/boot.haicc', Buffer.from(hook))
+    await r.commit('Its boot hook file', { author })
+  }
   mkdirSync(join(viewOf(work, 'test'), 'inbox'), { recursive: true })
   writeFileSync(join(work, 'mrepo.json'), JSON.stringify({ storage: 'filesystem', name: 'test' }))
-  // the schema registry, where the install has it: the package's types
-  // mounted as the warm boot mounts them (the skeleton)
-  const mount = join(mountOf(work), 'haiccing', 'base-package-runtime')
-  mkdirSync(mount, { recursive: true })
-  for (const f of readdirSync(join(pkg, 'types')).filter(f => f.endsWith('.avsc'))) copyFileSync(join(pkg, 'types', f), join(mount, f))
+  // its avro layer, as the package's structure gives it (mrepo/avro): its
+  // config and the three essential types, what the runtime checks by
+  if (!avro) return backend
+  await w.createLayer('avro', 'Create avro', { author })
+  const a = await w.change('avro')
+  await a.put('/.layer.json', readFileSync(join(pkg, 'mrepo', 'avro', '.layer.json')))
+  const held = join(pkg, 'mrepo', 'avro', 'types', 'haiccing', 'base-package-runtime')
+  for (const f of readdirSync(held)) await a.put(`/types/haiccing/base-package-runtime/${f}`, readFileSync(join(held, f)))
+  await a.commit('Its essential types', { author })
   return backend
 }
 
@@ -74,21 +82,20 @@ test('the runtime: started, answering, stopped', { timeout: 60000 }, async (t) =
     let s = null
     for (let i = 0; i < 100 && !s; i++) { s = await ask({ work, op: 'status' }); if (!s) await wait(100) }
     t.alike(s?.repository, { name: 'test', uri: 'test', storage: 'filesystem', id: null, key: null }, 'running: the mrepo, on the filesystem; no unique URI of its own: its name')
+    t.alike(await booted({ work }), { state: 'none' }, 'no boot hook here: none to wait for')
     // As it started: the protocol protocol opened by the runtime itself, its
-    // own request; then its boot hook file, a line a request through its
-    // inbox, before it took anything else in. This mrepo is the runtime
-    // package's part alone: it links no package, so the protocol protocol
-    // is not there: each says so, and the hook file stops at its first line.
+    // own request. This mrepo is the runtime package's part alone: it links
+    // no package, so the protocol protocol is not there, and it says so.
     const repo = openRepo(backend)
     let done = []
-    for (let i = 0; i < 100 && done.length < 2; i++) {
+    for (let i = 0; i < 100 && done.length < 1; i++) {
       done = []
       for (const n of await layer({ repo }, 'request/done').list()) done.push((await layer({ repo }, 'request/done').read(n)).value)
-      if (done.length < 2) await wait(100)
+      if (done.length < 1) await wait(100)
     }
-    t.alike(done.map(r => r.command).sort(), ['protocol/activate . help', 'protocol/activate . protocol'], 'the runtime\'s own, then the boot hook file\'s first line: each a request of its own, done')
-    t.ok(done.every(r => r.returned.status === 'failed' && /^Refused, nothing run\.\nno protocol: protocol \(/.test(r.returned.message)), 'neither possible here: no package linked, said; the hook file stopped at its first line')
-    t.alike(done.map(r => [r.from, r.to, r.reply]), [['test', 'test', null], ['test', 'test', null]], 'the mrepo\'s own: from and to itself, nobody waiting')
+    t.alike(done.map(r => r.command), ['protocol/activate . protocol'], 'the runtime\'s own: a request of its own, done')
+    t.ok(done.every(r => r.returned.status === 'failed' && /^Refused, nothing run\.\nno protocol: protocol \(/.test(r.returned.message)), 'not possible here: no package linked, said')
+    t.alike(done.map(r => [r.from, r.to, r.reply]), [['test', 'test', null]], 'the mrepo\'s own: from and to itself, nobody waiting')
     t.alike(await repo.select('/protocols/*'), [], 'so nothing is active')
     // The proof. Through its inbox: a request in, the same request out,
     // returned failed: nothing is active by default, said in words.
@@ -111,8 +118,44 @@ test('the runtime: started, answering, stopped', { timeout: 60000 }, async (t) =
     t.alike([kept.topic, kept.offset, kept.value], ['/request/done', offset, back.value], 'the same in request/done')
     t.is((await send(work, backend, 'crud/read .')).back.value.returned.message, 'Refused, nothing run.\nno protocol: crud ()', 'a protocol it does not have: refused at the door, said with the active ones (none)')
     t.is((await send(work, backend, 'runtime/run . x --flags nope')).back.value.returned.message, 'Not run: its flags.\nno flag: nope (container, feedback, help, layer, log, physical)', 'a flag there is none of: not run, said')
-    // by its types, asked of the registry, strict
+    // by its types, the mrepo's own, strict
     t.is((await send(work, backend, 'runtime/run . x', { more: 1 })).back.value.returned.message, 'Refused, nothing run.\nnot a request (haiccing/base-package-runtime/request): ., expected haiccing.basePackageRuntime.request', 'a field its type does not have: not a request, refused at the inbox')
+    t.ok((await ask({ work, op: 'stop' }))?.stopping, 'asked to stop')
+    for (let i = 0; i < 100 && alive(child.pid); i++) await wait(100)
+    t.absent(alive(child.pid), 'its process ended')
+  } finally { rmSync(work, { recursive: true, force: true }) }
+})
+
+test('its boot hook failing: the runtime bails out: nothing taken in, why said beside its repository, its process ended, exit 1', { timeout: 60000 }, async (t) => {
+  const work = mkdtempSync(join(tmpdir(), 'runtime-bail-'))
+  try {
+    const backend = await mrepo(work, { hook: '# boot\nprotocol/activate . help\nprotocol/activate . info\n' })
+    const entry = process.env.RUNTIME || join(pkg, 'run.js')
+    const child = spawn(os.execPath(), [entry, `--work=${work}`], { stdio: 'ignore' })
+    const code = await new Promise(resolve => child.on('exit', resolve))
+    t.is(code, 1, 'its process ended by itself, exit 1')
+    t.is(await ask({ work, op: 'status' }), null, 'no runtime answering')
+    const why = whyFailed({ repo: viewOf(work, 'test') })
+    t.ok(/^line 2: protocol\/activate \. help: Refused, nothing run\.\nno protocol: protocol \(/.test(why), `why, in its folder (runtime.failed): the line that failed and what it said: ${why?.split('\n')[0]}`)
+    const done = []
+    const repo = openRepo(backend)
+    for (const n of await layer({ repo }, 'request/done').list()) done.push((await layer({ repo }, 'request/done').read(n)).value.command)
+    t.alike(done.sort(), ['protocol/activate . help', 'protocol/activate . protocol'], 'its hook stopped at the line that failed: the next not run')
+    t.alike(await booted({ work }), { state: 'failed', error: why }, 'booted(), what waits on a boot hook: failed, with why')
+  } finally { rmSync(work, { recursive: true, force: true }) }
+})
+
+test('its essential types not held: a runtime on an mrepo with no avro layer takes nothing in, said with which', { timeout: 60000 }, async (t) => {
+  const work = mkdtempSync(join(tmpdir(), 'runtime-untyped-'))
+  try {
+    const backend = await mrepo(work, { avro: false })
+    const entry = process.env.RUNTIME || join(pkg, 'run.js')
+    const child = spawn(os.execPath(), [entry, `--work=${work}`], { stdio: 'ignore' })
+    let s = null
+    for (let i = 0; i < 100 && !s; i++) { s = await ask({ work, op: 'status' }); if (!s) await wait(100) }
+    t.ok(s?.pid, 'running')
+    const { back } = await send(work, backend, 'runtime/run . x')
+    t.alike(back?.value.returned, { status: 'failed', message: 'Refused, nothing run.\nits types are not held here: haiccing/base-package-runtime/record, haiccing/base-package-runtime/request (the mrepo\'s avro layer; nothing is taken in without them)', attachments: [] }, 'a request in: refused, said with the types it does not hold')
     t.ok((await ask({ work, op: 'stop' }))?.stopping, 'asked to stop')
     for (let i = 0; i < 100 && alive(child.pid); i++) await wait(100)
     t.absent(alive(child.pid), 'its process ended')

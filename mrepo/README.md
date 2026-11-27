@@ -3,9 +3,12 @@
 The runtime's part of every mrepo's structure, laid in when an mrepo is deployed: its layers.
 
 - **The layers** every mrepo has: `main`, `runtime`, `packages`,
-  `protocols`, the boxes, the request layers, and `xpath/log`, the log
-  of what the physical side did for each request.
+  `protocols`, the boxes, the request layers, `xpath/log` and `avro`.
 - **The `protocols` layer**: the active protocols, one file each.
+- **The `avro` layer**, the three essential types in it
+  (`avro/types/haiccing/base-package-runtime/`): what a runtime checks
+  a record at its inbox by, there from the deploy; copies of this
+  package's `types/`, held equal by its `types` test.
 
 ## Deployed alone
 

@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "haiccing.basePackageRuntime.attachment",
-  "doc": "Data that is an answer's product, named by its type. With its value it is a variant of this, its value its type's; stored apart, pointed to",
+  "doc": "Data that is an answer's product, a wrapper around it: what it is, its content's type, and its content as bytes by that type, or where its value is when it is not carried. One fixed type: what passes it on needs nothing of its content's type",
   "fields": [
     {
       "name": "name",
@@ -11,7 +11,19 @@
     {
       "name": "type",
       "type": "string",
-      "doc": "its type, by its URI: what its value is read as"
+      "doc": "its content's type, by its URI (a package's type, or one of AVRO's own, avro/<name>): what its content is read as; within an install a URI names one schema"
+    },
+    {
+      "name": "content",
+      "type": [
+        "null",
+        {
+          "type": "bytes",
+          "logicalType": "base64"
+        }
+      ],
+      "default": null,
+      "doc": "its content: AVRO's binary of the value by its type; base64 text in JSON and in memory; none when it is pointed to"
     },
     {
       "name": "at",

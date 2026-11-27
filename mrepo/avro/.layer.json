@@ -1,0 +1,4 @@
+{
+  "mode": "non-atomic",
+  "description": "The mrepo's register of the types and variants it uses, a cache, this machine's: types/ by org/package/type; the runtime's three essential types laid in with it."
+}

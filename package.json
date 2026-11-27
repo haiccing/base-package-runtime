@@ -8,6 +8,7 @@
   "modules": [
     "pear-full-square/mrepo-base-runtime",
     "pear-full-square/mycelium-avro",
+    "pear-full-square/mycelium-value",
     "pear-full-square/mrepo-base-info",
     "pear-full-square/pkgm-base-check"
   ],

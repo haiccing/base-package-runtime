@@ -17,4 +17,4 @@ const work = args.find(a => a.startsWith('--work='))
 // its own protocols, from its protocol.js
 const own = { pkg: 'haiccing/base-package-runtime', actions, protocols }
 await run(repo ? { repo: resolve(repo), own } : { work: resolve(work ? work.slice('--work='.length) : '.'), own })
-process.exit(0) // stopped: ended here (its signal handlers would hold the process open)
+process.exit(process.exitCode ?? 0) // stopped: ended here (its signal handlers would hold the process open); 1 where it bailed out (its boot hook failed)

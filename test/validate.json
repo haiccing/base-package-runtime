@@ -3,6 +3,7 @@
   "tests": [
     "start",
     "types",
+    "deployed",
     "info",
     "code",
     "mrepo",

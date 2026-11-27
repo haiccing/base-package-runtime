@@ -1,11 +1,12 @@
 # test/
 
-The runtime package's tests: two of its own, `start` and `types`, and the generic ones, a folder each.
+The runtime package's tests: `start`, `types` and `deployed`, its own, and the generic ones, a folder each.
 
 ## Links
 
 - [start](start/)
 - [types](types/)
+- [deployed](deployed/)
 - [info](info/)
 - [code](code/)
 - [mrepo](mrepo/)
@@ -18,6 +19,6 @@ The runtime package's tests: two of its own, `start` and `types`, and the generi
 
 | set | tests |
 |---|---|
-| `validate` | `start`, `types`, `info`, `code`, `mrepo`, `package` |
+| `validate` | `start`, `types`, `deployed` (an install of its own, from the sources), `info`, `code`, `mrepo`, `package` |
 | `validate-in-situ` | `types`, `info-in-situ`, `mrepo-in-situ`: run in a running mrepo with `runtime run`; what the platform runs to check the package where it is installed |
-| `full` | `start`, `types`, `info`, `code`, `mrepo`, `package`, `modules` |
+| `full` | `start`, `types`, `deployed`, `info`, `code`, `mrepo`, `package`, `modules` |
