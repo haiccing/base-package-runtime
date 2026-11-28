@@ -1,8 +1,8 @@
 {
   "package": "haiccing/base-package-runtime",
-  "content": "fa564bd2e1ab782bdab0d9c72f463f019e50bf6c879aed9d9924a5cbd092a945",
+  "content": "34d37fd71be46dd1d29c4bfb6bf4963425289943316f9ac3b5db71c7273943c2",
   "bare": "v1.36.0",
-  "date": "2026-11-28T00:16:40.776Z",
+  "date": "2026-11-28T08:30:32.600Z",
   "set": "full",
   "ok": true,
   "units": [
@@ -118,8 +118,8 @@
         "total": 11
       },
       "asserts": {
-        "passed": 93,
-        "total": 93
+        "passed": 92,
+        "total": 92
       },
       "failures": []
     },
@@ -224,19 +224,6 @@
       "asserts": {
         "passed": 16,
         "total": 16
-      },
-      "failures": []
-    },
-    {
-      "unit": "/test/modules/pear-full-square/mycelium-value-avro",
-      "ok": true,
-      "tests": {
-        "passed": 8,
-        "total": 8
-      },
-      "asserts": {
-        "passed": 57,
-        "total": 57
       },
       "failures": []
     },
